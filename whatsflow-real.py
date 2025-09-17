@@ -3355,6 +3355,104 @@ HTML_APP = '''<!DOCTYPE html>
             </div>
         </div>
 
+        <!-- Flow Editor Section -->
+        <div id="flowEditor" class="section" style="display: none;">
+            <div style="height: 100vh; display: flex; flex-direction: column;">
+                <!-- Header do Editor -->
+                <div style="background: #fff; border-bottom: 1px solid #e5e7eb; padding: 1rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <button class="btn btn-secondary" onclick="closeFlowEditor()">
+                            ← Voltar aos Fluxos
+                        </button>
+                        <div>
+                            <h2 id="flow-editor-title" style="margin: 0; font-size: 1.5rem;">Editor de Fluxo</h2>
+                            <p id="flow-editor-subtitle" style="margin: 0; color: #6b7280; font-size: 0.875rem;">Arraste elementos da barra lateral para criar seu fluxo</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-secondary" onclick="clearCanvas()">🗑️ Limpar</button>
+                        <button class="btn btn-success" onclick="saveFlow()">💾 Salvar Fluxo</button>
+                    </div>
+                </div>
+
+                <!-- Área Principal do Editor -->
+                <div style="flex: 1; display: flex; background: #f9fafb;">
+                    <!-- Barra Lateral de Elementos -->
+                    <div id="flow-sidebar" style="width: 280px; background: #fff; border-right: 1px solid #e5e7eb; padding: 1rem; overflow-y: auto;">
+                        <div style="margin-bottom: 1.5rem;">
+                            <h3 style="margin: 0 0 1rem 0; font-size: 1.125rem; color: #1f2937;">📋 Conteúdo</h3>
+                            
+                            <!-- Elementos Arrastavéis -->
+                            <div class="flow-elements-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.5rem;">
+                                <div class="flow-element" draggable="true" data-type="text" style="background: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem; border-radius: 0.5rem; text-align: center; cursor: grab; transition: all 0.2s;">
+                                    <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📝</div>
+                                    <div style="font-size: 0.75rem; font-weight: 600;">Texto</div>
+                                </div>
+                                
+                                <div class="flow-element" draggable="true" data-type="image" style="background: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem; border-radius: 0.5rem; text-align: center; cursor: grab; transition: all 0.2s;">
+                                    <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🖼️</div>
+                                    <div style="font-size: 0.75rem; font-weight: 600;">Imagem</div>
+                                </div>
+                                
+                                <div class="flow-element" draggable="true" data-type="video" style="background: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem; border-radius: 0.5rem; text-align: center; cursor: grab; transition: all 0.2s;">
+                                    <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🎥</div>
+                                    <div style="font-size: 0.75rem; font-weight: 600;">Vídeo</div>
+                                </div>
+                                
+                                <div class="flow-element" draggable="true" data-type="file" style="background: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem; border-radius: 0.5rem; text-align: center; cursor: grab; transition: all 0.2s;">
+                                    <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📎</div>
+                                    <div style="font-size: 0.75rem; font-weight: 600;">Arquivo</div>
+                                </div>
+                                
+                                <div class="flow-element" draggable="true" data-type="audio" style="background: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem; border-radius: 0.5rem; text-align: center; cursor: grab; transition: all 0.2s;">
+                                    <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔊</div>
+                                    <div style="font-size: 0.75rem; font-weight: 600;">Áudio</div>
+                                </div>
+                                
+                                <div class="flow-element" draggable="true" data-type="delay" style="background: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem; border-radius: 0.5rem; text-align: center; cursor: grab; transition: all 0.2s;">
+                                    <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">⏱️</div>
+                                    <div style="font-size: 0.75rem; font-weight: 600;">Atraso</div>
+                                </div>
+                                
+                                <div class="flow-element" draggable="true" data-type="contact" style="background: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem; border-radius: 0.5rem; text-align: center; cursor: grab; transition: all 0.2s;">
+                                    <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">👤</div>
+                                    <div style="font-size: 0.75rem; font-weight: 600;">Contato</div>
+                                </div>
+                                
+                                <div class="flow-element" draggable="true" data-type="save" style="background: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem; border-radius: 0.5rem; text-align: center; cursor: grab; transition: all 0.2s;">
+                                    <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">💾</div>
+                                    <div style="font-size: 0.75rem; font-weight: 600;">Salvar</div>
+                                </div>
+                                
+                                <div class="flow-element" draggable="true" data-type="autooff" style="background: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem; border-radius: 0.5rem; text-align: center; cursor: grab; transition: all 0.2s;">
+                                    <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔄</div>
+                                    <div style="font-size: 0.75rem; font-weight: 600;">AutoOff</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Textarea para conteúdo -->
+                            <div style="margin-bottom: 1rem;">
+                                <textarea id="flow-content-input" placeholder="Insira texto" style="width: 100%; height: 100px; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; resize: vertical; font-family: inherit;"></textarea>
+                            </div>
+                            
+                            <!-- Botões de Ação -->
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-sm btn-secondary" onclick="cancelContent()" style="flex: 1;">Cancelar</button>
+                                <button class="btn btn-sm btn-primary" onclick="addContent()" style="flex: 1;">Aceitar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Principal -->
+                    <div style="flex: 1; position: relative; overflow: hidden;">
+                        <div id="flow-canvas" style="width: 100%; height: 100%; position: relative; background: linear-gradient(to right, #f3f4f6 1px, transparent 1px), linear-gradient(to bottom, #f3f4f6 1px, transparent 1px); background-size: 20px 20px;">
+                            <!-- Elementos serão adicionados aqui dinamicamente -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Settings Section -->
         <div id="settings" class="section">
             <div class="settings-section">
