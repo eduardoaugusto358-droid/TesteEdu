@@ -1,0 +1,112 @@
+[
+  {
+    "test": "System Health",
+    "success": true,
+    "message": "System is healthy and accessible",
+    "timestamp": "2025-09-17T04:05:03.878113",
+    "details": {
+      "main_page": "OK",
+      "api": "OK"
+    }
+  },
+  {
+    "test": "GET /api/flows",
+    "success": true,
+    "message": "Successfully retrieved 3 flows",
+    "timestamp": "2025-09-17T04:05:03.880548",
+    "details": {
+      "status_code": 200,
+      "flow_count": 3
+    }
+  },
+  {
+    "test": "POST /api/flows",
+    "success": true,
+    "message": "Successfully created flow with ID: 802727f8-44e8-4e7e-9742-224e3c9ff505",
+    "timestamp": "2025-09-17T04:05:03.887034",
+    "details": {
+      "status_code": 200,
+      "flow_id": "802727f8-44e8-4e7e-9742-224e3c9ff505"
+    }
+  },
+  {
+    "test": "PUT /api/flows/{id}",
+    "success": true,
+    "message": "Successfully updated flow 802727f8-44e8-4e7e-9742-224e3c9ff505",
+    "timestamp": "2025-09-17T04:05:03.892942",
+    "details": {
+      "status_code": 200,
+      "flow_id": "802727f8-44e8-4e7e-9742-224e3c9ff505"
+    }
+  },
+  {
+    "test": "POST /api/flows",
+    "success": true,
+    "message": "Successfully created flow with ID: e9084d7d-3844-4083-b7b9-eeb79a750a6e",
+    "timestamp": "2025-09-17T04:05:03.898985",
+    "details": {
+      "status_code": 200,
+      "flow_id": "e9084d7d-3844-4083-b7b9-eeb79a750a6e"
+    }
+  },
+  {
+    "test": "GET /api/flows",
+    "success": true,
+    "message": "Successfully retrieved 5 flows",
+    "timestamp": "2025-09-17T04:05:04.902335",
+    "details": {
+      "status_code": 200,
+      "flow_count": 5
+    }
+  },
+  {
+    "test": "Database Flows Table",
+    "success": true,
+    "message": "Flow properly saved in database with all required fields",
+    "timestamp": "2025-09-17T04:05:04.902422",
+    "details": {
+      "flow_id": "e9084d7d-3844-4083-b7b9-eeb79a750a6e",
+      "fields_present": [
+        "id",
+        "name",
+        "description",
+        "nodes",
+        "edges",
+        "active",
+        "created_at",
+        "updated_at"
+      ]
+    }
+  },
+  {
+    "test": "Fluxos Tab Accessibility",
+    "success": true,
+    "message": "Fluxos tab found in HTML with 4/4 indicators",
+    "timestamp": "2025-09-17T04:05:04.905891",
+    "details": {
+      "found_indicators": [
+        "id=\"flows\"",
+        "showSection('flows')",
+        "flows-container",
+        "loadFlows()"
+      ]
+    }
+  },
+  {
+    "test": "Visual Flow Editor Components",
+    "success": true,
+    "message": "Visual editor components found - 7/7 indicators present",
+    "timestamp": "2025-09-17T04:05:04.909844",
+    "details": {
+      "found_indicators": [
+        "drag-and-drop",
+        "flow-editor",
+        "visual",
+        "renderFlows",
+        "flows-grid",
+        "editFlow",
+        "deleteFlow"
+      ]
+    }
+  }
+]
