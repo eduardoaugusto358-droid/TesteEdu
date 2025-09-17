@@ -4004,6 +4004,85 @@ HTML_APP = '''<!DOCTYPE html>
         </div>
     </div>
 
+    <!-- Flow Element Configuration Modal -->
+    <div id="flowElementModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h3 id="flowElementModalTitle">⚙️ Configurar Elemento</h3>
+            
+            <div id="flowElementConfig">
+                <!-- Text Element Config -->
+                <div id="textConfig" class="element-config" style="display: none;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Mensagem de Texto:</label>
+                    <textarea id="textContent" style="width: 100%; height: 120px; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; resize: vertical;" placeholder="Digite sua mensagem aqui..."></textarea>
+                </div>
+                
+                <!-- Image Element Config -->
+                <div id="imageConfig" class="element-config" style="display: none;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">URL da Imagem:</label>
+                    <input type="url" id="imageUrl" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; margin-bottom: 1rem;" placeholder="https://exemplo.com/imagem.jpg">
+                    
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Legenda (opcional):</label>
+                    <textarea id="imageCaption" style="width: 100%; height: 60px; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; resize: vertical;" placeholder="Legenda da imagem..."></textarea>
+                    
+                    <div id="imagePreview" style="margin-top: 1rem; display: none;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 500;">Preview:</label>
+                        <img id="previewImg" style="max-width: 100%; max-height: 200px; border-radius: 0.5rem; border: 1px solid #e5e7eb;">
+                    </div>
+                </div>
+                
+                <!-- Video Element Config -->
+                <div id="videoConfig" class="element-config" style="display: none;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">URL do Vídeo:</label>
+                    <input type="url" id="videoUrl" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; margin-bottom: 1rem;" placeholder="https://exemplo.com/video.mp4">
+                    
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Legenda (opcional):</label>
+                    <textarea id="videoCaption" style="width: 100%; height: 60px; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; resize: vertical;" placeholder="Legenda do vídeo..."></textarea>
+                </div>
+                
+                <!-- Audio Element Config -->
+                <div id="audioConfig" class="element-config" style="display: none;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">URL do Áudio:</label>
+                    <input type="url" id="audioUrl" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;" placeholder="https://exemplo.com/audio.mp3">
+                </div>
+                
+                <!-- File Element Config -->
+                <div id="fileConfig" class="element-config" style="display: none;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">URL do Arquivo:</label>
+                    <input type="url" id="fileUrl" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; margin-bottom: 1rem;" placeholder="https://exemplo.com/arquivo.pdf">
+                    
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Nome do Arquivo:</label>
+                    <input type="text" id="fileName" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;" placeholder="documento.pdf">
+                </div>
+                
+                <!-- Delay Element Config -->
+                <div id="delayConfig" class="element-config" style="display: none;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Tempo de Atraso (segundos):</label>
+                    <input type="number" id="delayTime" min="1" max="3600" value="5" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;" placeholder="5">
+                    <small style="color: #6b7280;">Entre 1 e 3600 segundos (1 hora máximo)</small>
+                </div>
+                
+                <!-- Contact Element Config -->
+                <div id="contactConfig" class="element-config" style="display: none;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Nome do Contato:</label>
+                    <input type="text" id="contactName" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; margin-bottom: 1rem;" placeholder="João Silva">
+                    
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Telefone:</label>
+                    <input type="tel" id="contactPhone" style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;" placeholder="+55 11 99999-9999">
+                </div>
+                
+                <!-- Save/AutoOff Config -->
+                <div id="saveConfig" class="element-config" style="display: none;">
+                    <p style="color: #6b7280; margin: 1rem 0;">Este elemento não possui configurações adicionais.</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeFlowElementModal()">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveFlowElement()" style="flex: 1;">Salvar Elemento</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_BASE_URL = window.API_BASE_URL || 'http://78.46.250.112:3002';
         let instances = [];
