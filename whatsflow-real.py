@@ -5,7 +5,7 @@ Sistema de Automação WhatsApp com conexão verdadeira
 
 Requisitos: Python 3 + Node.js (para Baileys)
 Instalação: python3 whatsflow-real.py
-Acesso: http://localhost:8888
+Acesso: http://78.46.250.112:8889
 """
 
 import json
@@ -71,6 +71,11 @@ DB_FILE = "whatsflow.db"
 PORT = 8889
 WEBSOCKET_PORT = 8890
 
+SERVER_PUBLIC_IP = os.environ.get("WHATSFLOW_SERVER_IP", "78.46.250.112")
+SERVER_BASE_URL = f"http://{SERVER_PUBLIC_IP}:{PORT}"
+WEBSOCKET_PUBLIC_URL = f"ws://{SERVER_PUBLIC_IP}:{WEBSOCKET_PORT}"
+WEBSOCKET_BIND_HOST = os.environ.get("WHATSFLOW_WEBSOCKET_HOST", "0.0.0.0")
+
 DEFAULT_MINIO_ENDPOINT = "https://minio.auto-atendimento.digital"
 
 MINIO_ENDPOINT_RAW = os.environ.get("MINIO_ENDPOINT", DEFAULT_MINIO_ENDPOINT)
@@ -127,7 +132,7 @@ def _compute_minio_host(endpoint: str) -> Tuple[str, bool]:
     parsed = urllib.parse.urlparse(endpoint)
     host = parsed.netloc or parsed.path
     if not host:
-        host = "localhost:9000"
+        host = f"{SERVER_PUBLIC_IP}:9000"
     secure = parsed.scheme.lower() == "https"
     return host, secure
 
@@ -366,8 +371,8 @@ def guess_public_baileys_url() -> Optional[str]:
 
 
 DEFAULT_BAILEYS_URLS = [
+    f"http://{SERVER_PUBLIC_IP}:3002",
     "http://127.0.0.1:3002",
-    "http://localhost:3002",
     os.environ.get("API_BASE_URL"),
     guess_public_baileys_url(),
     "http://78.46.250.112:3002",
@@ -8932,14 +8937,16 @@ if WEBSOCKETS_AVAILABLE:
                 asyncio.set_event_loop(loop)
                 
                 start_server = websockets.serve(
-                    websocket_handler, 
-                    "localhost", 
+                    websocket_handler,
+                    WEBSOCKET_BIND_HOST,
                     WEBSOCKET_PORT,
                     ping_interval=30,
                     ping_timeout=10
                 )
-                
-                logger.info(f"🔌 WebSocket server iniciado na porta {WEBSOCKET_PORT}")
+
+                logger.info(
+                    f"🔌 WebSocket server iniciado em {WEBSOCKET_BIND_HOST}:{WEBSOCKET_PORT}"
+                )
                 loop.run_until_complete(start_server)
                 loop.run_forever()
             except Exception as e:
@@ -9158,7 +9165,7 @@ async function connectInstance(instanceId) {
                 // Notify backend about disconnection
                 try {
                     const fetch = (await import('node-fetch')).default;
-                    await fetch(`${process.env.WHATSFLOW_API_URL || 'http://localhost:8889'}/api/whatsapp/disconnected`, {
+                    await fetch(`${process.env.WHATSFLOW_API_URL || '__WHATSFLOW_BASE_URL__'}/api/whatsapp/disconnected`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -9214,7 +9221,7 @@ async function connectInstance(instanceId) {
                             
                             // Send batch to Python backend
                             const fetch = (await import('node-fetch')).default;
-                            await fetch(`${process.env.WHATSFLOW_API_URL || 'http://localhost:8889'}/api/chats/import`, {
+                            await fetch(`${process.env.WHATSFLOW_API_URL || '__WHATSFLOW_BASE_URL__'}/api/chats/import`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
@@ -9243,7 +9250,7 @@ async function connectInstance(instanceId) {
                 setTimeout(async () => {
                     try {
                         const fetch = (await import('node-fetch')).default;
-                        await fetch(`${process.env.WHATSFLOW_API_URL || 'http://localhost:8889'}/api/whatsapp/connected`, {
+                        await fetch(`${process.env.WHATSFLOW_API_URL || '__WHATSFLOW_BASE_URL__'}/api/whatsapp/connected`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -9292,7 +9299,7 @@ async function connectInstance(instanceId) {
                     while (retries > 0) {
                         try {
                             const fetch = (await import('node-fetch')).default;
-                            const response = await fetch(`${process.env.WHATSFLOW_API_URL || 'http://localhost:8889'}/api/messages/receive`, {
+                            const response = await fetch(`${process.env.WHATSFLOW_API_URL || '__WHATSFLOW_BASE_URL__'}/api/messages/receive`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
@@ -9572,10 +9579,19 @@ app.get('/health', (req, res) => {
 const PORT = process.env.PORT || 3002;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Baileys service rodando na porta ${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/health`);
+    console.log(`📊 Health check: __BAILEYS_HEALTH_URL__`);
     console.log('⏳ Aguardando comandos para conectar instâncias...');
 });'''
-            
+
+            baileys_server = baileys_server.replace(
+                "__WHATSFLOW_BASE_URL__",
+                SERVER_BASE_URL
+            )
+            baileys_server = baileys_server.replace(
+                "__BAILEYS_HEALTH_URL__",
+                f"http://{SERVER_PUBLIC_IP}:${{PORT}}/health"
+            )
+
             server_path = f"{self.baileys_dir}/server.js"
             with open(server_path, 'w') as f:
                 f.write(baileys_server)
@@ -9619,7 +9635,7 @@ app.listen(PORT, '0.0.0.0', () => {
             try:
                 # Set environment variables for Node.js process
                 env = os.environ.copy()
-                env['WHATSFLOW_API_URL'] = f'http://localhost:{PORT}'
+                env['WHATSFLOW_API_URL'] = SERVER_BASE_URL
                 
                 self.process = subprocess.Popen(
                     ['node', 'server.js'],
@@ -12159,8 +12175,8 @@ def main():
     signal.signal(signal.SIGINT, signal_handler_with_scheduler)
     
     print("✅ WhatsFlow Professional configurado!")
-    print(f"🌐 Interface: http://localhost:{PORT}")
-    print(f"🔌 WebSocket: ws://localhost:{WEBSOCKET_PORT}")
+    print(f"🌐 Interface: {SERVER_BASE_URL}")
+    print(f"🔌 WebSocket: {WEBSOCKET_PUBLIC_URL}")
     print(f"📱 WhatsApp Service: {API_BASE_URL}")
     print("⏰ Agendador de Mensagens: Ativo")
     print("🚀 Servidor iniciando...")
@@ -12171,7 +12187,7 @@ def main():
         server = HTTPServer(('0.0.0.0', PORT), WhatsFlowRealHandler)
         print(f"✅ Servidor rodando na porta {PORT}")
         print("🔗 Pronto para conectar WhatsApp REAL!")
-        print(f"🌐 Acesse: http://localhost:{PORT}")
+        print(f"🌐 Acesse: {SERVER_BASE_URL}")
         print("🎉 Sistema profissional pronto para uso!")
         server.serve_forever()
     except KeyboardInterrupt:
