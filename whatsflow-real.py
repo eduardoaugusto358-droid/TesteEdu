@@ -8056,6 +8056,627 @@ transform-api-response-and-mark-selected-groups-z0tcv8
                 }
             };
         });
+
+        // ===== FLOW EDITOR FUNCTIONS =====
+        
+        let currentFlowId = null;
+        let flowNodes = [];
+        let flowConnections = [];
+        let selectedNode = null;
+        let isDragging = false;
+        let dragOffset = { x: 0, y: 0 };
+        let connectingFrom = null;
+        let nodeCounter = 0;
+        
+        // Open flow editor
+        function openFlowEditor(flowId) {
+            currentFlowId = flowId;
+            loadFlowData(flowId);
+            document.getElementById('flows').style.display = 'none';
+            document.getElementById('flowEditor').style.display = 'block';
+            
+            // Initialize drag and drop
+            initializeFlowEditor();
+        }
+        
+        // Close flow editor
+        function closeFlowEditor() {
+            document.getElementById('flowEditor').style.display = 'none';
+            document.getElementById('flows').style.display = 'block';
+            clearCanvas();
+        }
+        
+        // Initialize flow editor
+        function initializeFlowEditor() {
+            const canvas = document.getElementById('flow-canvas');
+            const sidebar = document.getElementById('flow-sidebar');
+            
+            // Add drag and drop event listeners
+            const elements = sidebar.querySelectorAll('.flow-element');
+            elements.forEach(element => {
+                element.addEventListener('dragstart', handleDragStart);
+                element.addEventListener('dragend', handleDragEnd);
+            });
+            
+            canvas.addEventListener('dragover', handleDragOver);
+            canvas.addEventListener('drop', handleDrop);
+            canvas.addEventListener('click', handleCanvasClick);
+            
+            // Image preview for URL inputs
+            const imageUrlInput = document.getElementById('imageUrl');
+            if (imageUrlInput) {
+                imageUrlInput.addEventListener('input', handleImageUrlChange);
+            }
+        }
+        
+        // Handle drag start
+        function handleDragStart(e) {
+            e.dataTransfer.setData('text/plain', e.target.dataset.type);
+            e.dataTransfer.effectAllowed = 'copy';
+        }
+        
+        // Handle drag end
+        function handleDragEnd(e) {
+            // Reset any visual feedback
+        }
+        
+        // Handle drag over canvas
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            
+            // Add visual feedback
+            const canvas = document.getElementById('flow-canvas');
+            canvas.classList.add('flow-canvas-drop-zone');
+        }
+        
+        // Handle drop on canvas
+        function handleDrop(e) {
+            e.preventDefault();
+            const canvas = document.getElementById('flow-canvas');
+            canvas.classList.remove('flow-canvas-drop-zone');
+            
+            const elementType = e.dataTransfer.getData('text/plain');
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            openElementConfigModal(elementType, x, y);
+        }
+        
+        // Open element configuration modal
+        function openElementConfigModal(type, x, y) {
+            const modal = document.getElementById('flowElementModal');
+            const title = document.getElementById('flowElementModalTitle');
+            
+            // Hide all config sections
+            document.querySelectorAll('.element-config').forEach(el => el.style.display = 'none');
+            
+            // Show relevant config section and set title
+            const config = {
+                text: { title: '📝 Configurar Texto', section: 'textConfig' },
+                image: { title: '🖼️ Configurar Imagem', section: 'imageConfig' },
+                video: { title: '🎥 Configurar Vídeo', section: 'videoConfig' },
+                audio: { title: '🔊 Configurar Áudio', section: 'audioConfig' },
+                file: { title: '📎 Configurar Arquivo', section: 'fileConfig' },
+                delay: { title: '⏱️ Configurar Atraso', section: 'delayConfig' },
+                contact: { title: '👤 Configurar Contato', section: 'contactConfig' },
+                save: { title: '💾 Elemento Salvar', section: 'saveConfig' },
+                autooff: { title: '🔄 Elemento AutoOff', section: 'saveConfig' }
+            };
+            
+            const elementConfig = config[type];
+            if (elementConfig) {
+                title.textContent = elementConfig.title;
+                document.getElementById(elementConfig.section).style.display = 'block';
+            }
+            
+            // Store position for when element is saved
+            modal.dataset.elementType = type;
+            modal.dataset.positionX = x;
+            modal.dataset.positionY = y;
+            modal.dataset.isEditing = 'false';
+            
+            modal.classList.add('show');
+        }
+        
+        // Close element config modal
+        function closeFlowElementModal() {
+            const modal = document.getElementById('flowElementModal');
+            modal.classList.remove('show');
+            
+            // Clear form inputs
+            modal.querySelectorAll('input, textarea').forEach(input => input.value = '');
+            document.getElementById('imagePreview').style.display = 'none';
+        }
+        
+        // Save flow element
+        function saveFlowElement() {
+            const modal = document.getElementById('flowElementModal');
+            const type = modal.dataset.elementType;
+            const x = parseInt(modal.dataset.positionX);
+            const y = parseInt(modal.dataset.positionY);
+            const isEditing = modal.dataset.isEditing === 'true';
+            const nodeId = modal.dataset.nodeId;
+            
+            const elementData = gatherElementData(type);
+            
+            if (!validateElementData(type, elementData)) {
+                return;
+            }
+            
+            if (isEditing && nodeId) {
+                updateFlowNode(nodeId, elementData);
+            } else {
+                createFlowNode(type, x, y, elementData);
+            }
+            
+            closeFlowElementModal();
+        }
+        
+        // Gather element data from form
+        function gatherElementData(type) {
+            const data = { type };
+            
+            switch (type) {
+                case 'text':
+                    data.content = document.getElementById('textContent').value;
+                    break;
+                case 'image':
+                    data.url = document.getElementById('imageUrl').value;
+                    data.caption = document.getElementById('imageCaption').value;
+                    break;
+                case 'video':
+                    data.url = document.getElementById('videoUrl').value;
+                    data.caption = document.getElementById('videoCaption').value;
+                    break;
+                case 'audio':
+                    data.url = document.getElementById('audioUrl').value;
+                    break;
+                case 'file':
+                    data.url = document.getElementById('fileUrl').value;
+                    data.filename = document.getElementById('fileName').value;
+                    break;
+                case 'delay':
+                    data.seconds = parseInt(document.getElementById('delayTime').value);
+                    break;
+                case 'contact':
+                    data.name = document.getElementById('contactName').value;
+                    data.phone = document.getElementById('contactPhone').value;
+                    break;
+            }
+            
+            return data;
+        }
+        
+        // Validate element data
+        function validateElementData(type, data) {
+            switch (type) {
+                case 'text':
+                    if (!data.content.trim()) {
+                        alert('Por favor, insira o texto da mensagem.');
+                        return false;
+                    }
+                    break;
+                case 'image':
+                case 'video':
+                case 'audio':
+                case 'file':
+                    if (!data.url.trim()) {
+                        alert('Por favor, insira a URL do arquivo.');
+                        return false;
+                    }
+                    if (!isValidUrl(data.url)) {
+                        alert('Por favor, insira uma URL válida.');
+                        return false;
+                    }
+                    break;
+                case 'delay':
+                    if (!data.seconds || data.seconds < 1 || data.seconds > 3600) {
+                        alert('Por favor, insira um tempo entre 1 e 3600 segundos.');
+                        return false;
+                    }
+                    break;
+                case 'contact':
+                    if (!data.name.trim() || !data.phone.trim()) {
+                        alert('Por favor, preencha nome e telefone do contato.');
+                        return false;
+                    }
+                    break;
+            }
+            return true;
+        }
+        
+        // Validate URL
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+        
+        // Create flow node
+        function createFlowNode(type, x, y, data) {
+            const nodeId = `node_${++nodeCounter}`;
+            const node = {
+                id: nodeId,
+                type,
+                x,
+                y,
+                data
+            };
+            
+            flowNodes.push(node);
+            renderFlowNode(node);
+        }
+        
+        // Update flow node
+        function updateFlowNode(nodeId, data) {
+            const node = flowNodes.find(n => n.id === nodeId);
+            if (node) {
+                node.data = data;
+                renderAllNodes();
+            }
+        }
+        
+        // Render flow node
+        function renderFlowNode(node) {
+            const canvas = document.getElementById('flow-canvas');
+            
+            // Create node element
+            const nodeEl = document.createElement('div');
+            nodeEl.className = `flow-node ${node.type}`;
+            nodeEl.id = node.id;
+            nodeEl.style.left = node.x + 'px';
+            nodeEl.style.top = node.y + 'px';
+            
+            // Get icon and preview content
+            const { icon, preview } = getNodeDisplay(node);
+            
+            nodeEl.innerHTML = `
+                <div class="flow-node-header">
+                    <span class="flow-node-icon">${icon}</span>
+                    <span>${getNodeTitle(node.type)}</span>
+                </div>
+                <div class="flow-node-content">${preview}</div>
+                <button class="flow-node-delete" onclick="deleteFlowNode('${node.id}')">&times;</button>
+                <div class="connection-point input" data-node="${node.id}"></div>
+                <div class="connection-point output" data-node="${node.id}"></div>
+            `;
+            
+            // Add event listeners
+            nodeEl.addEventListener('mousedown', startNodeDrag);
+            nodeEl.addEventListener('dblclick', editFlowNode);
+            
+            canvas.appendChild(nodeEl);
+        }
+        
+        // Get node display info
+        function getNodeDisplay(node) {
+            const icons = {
+                text: '📝', image: '🖼️', video: '🎥', audio: '🔊',
+                file: '📎', delay: '⏱️', contact: '👤', save: '💾', autooff: '🔄'
+            };
+            
+            const icon = icons[node.type] || '❓';
+            let preview = '';
+            
+            switch (node.type) {
+                case 'text':
+                    preview = node.data.content ? node.data.content.substring(0, 50) + (node.data.content.length > 50 ? '...' : '') : 'Sem texto';
+                    break;
+                case 'image':
+                    preview = node.data.url ? `Imagem: ${getUrlFilename(node.data.url)}` : 'Sem URL';
+                    if (node.data.caption) preview += `\nLegenda: ${node.data.caption.substring(0, 30)}...`;
+                    break;
+                case 'video':
+                    preview = node.data.url ? `Vídeo: ${getUrlFilename(node.data.url)}` : 'Sem URL';
+                    if (node.data.caption) preview += `\nLegenda: ${node.data.caption.substring(0, 30)}...`;
+                    break;
+                case 'audio':
+                    preview = node.data.url ? `Áudio: ${getUrlFilename(node.data.url)}` : 'Sem URL';
+                    break;
+                case 'file':
+                    preview = node.data.filename || (node.data.url ? getUrlFilename(node.data.url) : 'Sem arquivo');
+                    break;
+                case 'delay':
+                    preview = `Aguardar ${node.data.seconds}s`;
+                    break;
+                case 'contact':
+                    preview = node.data.name ? `${node.data.name}\n${node.data.phone}` : 'Sem contato';
+                    break;
+                case 'save':
+                    preview = 'Salvar conversa';
+                    break;
+                case 'autooff':
+                    preview = 'Auto desligar';
+                    break;
+                default:
+                    preview = 'Configurar elemento';
+            }
+            
+            return { icon, preview };
+        }
+        
+        // Get filename from URL
+        function getUrlFilename(url) {
+            try {
+                return url.split('/').pop().split('?')[0] || 'arquivo';
+            } catch {
+                return 'arquivo';
+            }
+        }
+        
+        // Get node title
+        function getNodeTitle(type) {
+            const titles = {
+                text: 'Texto', image: 'Imagem', video: 'Vídeo', audio: 'Áudio',
+                file: 'Arquivo', delay: 'Atraso', contact: 'Contato', save: 'Salvar', autooff: 'AutoOff'
+            };
+            return titles[type] || 'Elemento';
+        }
+        
+        // Start node drag
+        function startNodeDrag(e) {
+            if (e.target.classList.contains('flow-node-delete') || e.target.classList.contains('connection-point')) {
+                return;
+            }
+            
+            e.preventDefault();
+            selectedNode = e.currentTarget;
+            isDragging = true;
+            
+            const rect = selectedNode.getBoundingClientRect();
+            const canvasRect = document.getElementById('flow-canvas').getBoundingClientRect();
+            
+            dragOffset.x = e.clientX - rect.left;
+            dragOffset.y = e.clientY - rect.top;
+            
+            selectedNode.classList.add('dragging', 'selected');
+            
+            document.addEventListener('mousemove', handleNodeDrag);
+            document.addEventListener('mouseup', stopNodeDrag);
+        }
+        
+        // Handle node drag
+        function handleNodeDrag(e) {
+            if (!isDragging || !selectedNode) return;
+            
+            const canvasRect = document.getElementById('flow-canvas').getBoundingClientRect();
+            const x = e.clientX - canvasRect.left - dragOffset.x;
+            const y = e.clientY - canvasRect.top - dragOffset.y;
+            
+            selectedNode.style.left = Math.max(0, x) + 'px';
+            selectedNode.style.top = Math.max(0, y) + 'px';
+            
+            // Update node position in data
+            const node = flowNodes.find(n => n.id === selectedNode.id);
+            if (node) {
+                node.x = Math.max(0, x);
+                node.y = Math.max(0, y);
+            }
+        }
+        
+        // Stop node drag
+        function stopNodeDrag() {
+            if (selectedNode) {
+                selectedNode.classList.remove('dragging');
+                selectedNode = null;
+            }
+            isDragging = false;
+            
+            document.removeEventListener('mousemove', handleNodeDrag);
+            document.removeEventListener('mouseup', stopNodeDrag);
+        }
+        
+        // Edit flow node
+        function editFlowNode(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const nodeId = e.currentTarget.id;
+            const node = flowNodes.find(n => n.id === nodeId);
+            
+            if (!node) return;
+            
+            const modal = document.getElementById('flowElementModal');
+            const title = document.getElementById('flowElementModalTitle');
+            
+            // Hide all config sections
+            document.querySelectorAll('.element-config').forEach(el => el.style.display = 'none');
+            
+            // Show relevant config section and set title
+            const config = {
+                text: { title: '📝 Editar Texto', section: 'textConfig' },
+                image: { title: '🖼️ Editar Imagem', section: 'imageConfig' },
+                video: { title: '🎥 Editar Vídeo', section: 'videoConfig' },
+                audio: { title: '🔊 Editar Áudio', section: 'audioConfig' },
+                file: { title: '📎 Editar Arquivo', section: 'fileConfig' },
+                delay: { title: '⏱️ Editar Atraso', section: 'delayConfig' },
+                contact: { title: '👤 Editar Contato', section: 'contactConfig' },
+                save: { title: '💾 Elemento Salvar', section: 'saveConfig' },
+                autooff: { title: '🔄 Elemento AutoOff', section: 'saveConfig' }
+            };
+            
+            const elementConfig = config[node.type];
+            if (elementConfig) {
+                title.textContent = elementConfig.title;
+                document.getElementById(elementConfig.section).style.display = 'block';
+                
+                // Populate form with current data
+                populateFormWithNodeData(node);
+            }
+            
+            modal.dataset.elementType = node.type;
+            modal.dataset.isEditing = 'true';
+            modal.dataset.nodeId = nodeId;
+            modal.classList.add('show');
+        }
+        
+        // Populate form with node data
+        function populateFormWithNodeData(node) {
+            switch (node.type) {
+                case 'text':
+                    document.getElementById('textContent').value = node.data.content || '';
+                    break;
+                case 'image':
+                    document.getElementById('imageUrl').value = node.data.url || '';
+                    document.getElementById('imageCaption').value = node.data.caption || '';
+                    if (node.data.url) handleImageUrlChange({ target: { value: node.data.url } });
+                    break;
+                case 'video':
+                    document.getElementById('videoUrl').value = node.data.url || '';
+                    document.getElementById('videoCaption').value = node.data.caption || '';
+                    break;
+                case 'audio':
+                    document.getElementById('audioUrl').value = node.data.url || '';
+                    break;
+                case 'file':
+                    document.getElementById('fileUrl').value = node.data.url || '';
+                    document.getElementById('fileName').value = node.data.filename || '';
+                    break;
+                case 'delay':
+                    document.getElementById('delayTime').value = node.data.seconds || 5;
+                    break;
+                case 'contact':
+                    document.getElementById('contactName').value = node.data.name || '';
+                    document.getElementById('contactPhone').value = node.data.phone || '';
+                    break;
+            }
+        }
+        
+        // Delete flow node
+        function deleteFlowNode(nodeId) {
+            if (!confirm('Excluir este elemento?')) return;
+            
+            // Remove from data
+            flowNodes = flowNodes.filter(n => n.id !== nodeId);
+            
+            // Remove from DOM
+            const nodeEl = document.getElementById(nodeId);
+            if (nodeEl) nodeEl.remove();
+        }
+        
+        // Handle canvas click
+        function handleCanvasClick(e) {
+            if (e.target.classList.contains('flow-node') || e.target.closest('.flow-node')) {
+                return;
+            }
+            
+            // Deselect all nodes
+            document.querySelectorAll('.flow-node.selected').forEach(node => {
+                node.classList.remove('selected');
+            });
+        }
+        
+        // Handle image URL change for preview
+        function handleImageUrlChange(e) {
+            const url = e.target.value.trim();
+            const preview = document.getElementById('imagePreview');
+            const img = document.getElementById('previewImg');
+            
+            if (!url || !isValidUrl(url)) {
+                preview.style.display = 'none';
+                return;
+            }
+            
+            img.onload = function() {
+                preview.style.display = 'block';
+            };
+            
+            img.onerror = function() {
+                preview.style.display = 'none';
+            };
+            
+            img.src = url;
+        }
+        
+        // Clear canvas
+        function clearCanvas() {
+            if (flowNodes.length > 0 && !confirm('Esta ação irá limpar todos os elementos do canvas. Deseja continuar?')) {
+                return;
+            }
+            
+            flowNodes = [];
+            flowConnections = [];
+            selectedNode = null;
+            nodeCounter = 0;
+            
+            const canvas = document.getElementById('flow-canvas');
+            canvas.innerHTML = '';
+        }
+        
+        // Render all nodes
+        function renderAllNodes() {
+            const canvas = document.getElementById('flow-canvas');
+            canvas.innerHTML = '';
+            
+            flowNodes.forEach(node => renderFlowNode(node));
+        }
+        
+        // Load flow data
+        async function loadFlowData(flowId) {
+            try {
+                const response = await fetch(`/api/flows`);
+                const flows = await response.json();
+                const flow = flows.find(f => f.id === flowId);
+                
+                if (flow) {
+                    document.getElementById('flow-editor-title').textContent = `Editor: ${flow.name}`;
+                    document.getElementById('flow-editor-subtitle').textContent = flow.description || 'Edite seu fluxo de automação';
+                    
+                    // Load flow nodes
+                    if (flow.nodes && flow.nodes.length > 0) {
+                        flowNodes = flow.nodes.map(node => ({
+                            ...node,
+                            id: node.id || `node_${++nodeCounter}`
+                        }));
+                        
+                        // Find max counter to avoid ID conflicts
+                        const maxCounter = Math.max(...flowNodes.map(n => {
+                            const match = n.id.match(/node_(\d+)/);
+                            return match ? parseInt(match[1]) : 0;
+                        }));
+                        nodeCounter = Math.max(nodeCounter, maxCounter);
+                        
+                        renderAllNodes();
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Erro ao carregar dados do fluxo:', error);
+                alert('Erro ao carregar fluxo');
+            }
+        }
+        
+        // Save flow
+        async function saveFlow() {
+            if (!currentFlowId) {
+                alert('Erro: ID do fluxo não encontrado');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/flows/${currentFlowId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nodes: flowNodes,
+                        edges: flowConnections
+                    })
+                });
+                
+                if (response.ok) {
+                    alert('✅ Fluxo salvo com sucesso!');
+                } else {
+                    throw new Error('Erro ao salvar fluxo');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao salvar fluxo:', error);
+                alert('❌ Erro ao salvar fluxo');
+            }
+        }
     </script>
 </body>
 </html>'''
