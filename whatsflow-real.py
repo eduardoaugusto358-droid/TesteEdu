@@ -5385,7 +5385,7 @@ HTML_APP = '''<!DOCTYPE html>
         }
         
         function editFlow(flowId) {
-            alert(`🚧 Editor de Fluxos em Desenvolvimento!\n\nFluxo ID: ${flowId}\n\nEm breve você poderá editar fluxos com interface drag-and-drop.\n\nFuncionalidades planejadas:\n• Editor visual\n• Nós de condição\n• Nós de resposta\n• Nós de delay\n• Integração com instâncias`);
+            openFlowEditor(flowId);
         }
         
         async function toggleFlow(flowId, currentStatus) {
